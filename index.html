@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bốc Thăm Trúng Thưởng</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico"> <!-- Thêm favicon -->
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f9fafc;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 420px;
+      margin: 32px auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px #0001;
+      padding: 32px 20px 24px 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    label {
+      font-weight: 500;
+      margin-bottom: 4px;
+      display: block;
+      color: #555;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 18px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #ff7f50;
+      color: #fff;
+      border: none;
+      padding: 14px 0;
+      width: 100%;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #ff6347;
+    }
+    .result {
+      text-align: center;
+      margin-top: 24px;
+      padding: 18px 16px;
+      background: #e6ffe6;
+      border-radius: 8px;
+      font-size: 20px;
+      color: #028c2f;
+      font-weight: bold;
+    }
+    .error {
+      color: #d32f2f;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    @media (max-width: 480px) {
+      .container {
+        padding: 16px 4vw 16px 4vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bốc Thăm Trúng Thưởng</h1>
+    <form id="luckyForm" autocomplete="off">
+      <div class="error" id="errorMsg"></div>
+
+      <label for="ordercode">Mã đơn hàng</label>
+      <input type="text" id="ordercode" name="ordercode" required placeholder="Nhập mã đơn hàng">
+
+      <label for="amount">Giá trị đơn hàng (VND)</label>
+      <input type="number" id="amount" name="amount" required min="200000" placeholder="Ví dụ: 250000">
+
+      <label for="name">Họ và tên</label>
+      <input type="text" id="name" name="name" required placeholder="Nguyễn Văn A">
+
+      <label for="district">Địa chỉ (Quận)</label>
+      <input type="text" id="district" name="district" required placeholder="Quận 1">
+
+      <label for="phone">Số điện thoại</label>
+      <input type="tel" id="phone" name="phone" required pattern="^0\d{9}$" placeholder="0987654321">
+
+      <button type="submit" id="submitBtn">Bốc thăm</button>
+    </form>
+    <div id="result" class="result" style="display:none;"></div>
+  </div>
+
+  <script>
+    // URL Google Apps Script
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzEq7Q2D7ja7l1m9vOWX92PnigbSM2cN_2dGiLY-rtr4lpNz9myYXXBACsQ7RtyRBOC/exec';
+
+    document.getElementById('luckyForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      document.getElementById('errorMsg').textContent = '';
+      document.getElementById('result').style.display = 'none';
+
+      // Lấy dữ liệu form
+      const ordercode = document.getElementById('ordercode').value.trim();
+      const amount = parseInt(document.getElementById('amount').value, 10);
+      const name = document.getElementById('name').value.trim();
+      const district = document.getElementById('district').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+
+      // Kiểm tra dữ liệu đầu vào
+      if (!ordercode) {
+        document.getElementById('errorMsg').textContent = 'Vui lòng nhập mã đơn hàng!';
+        return;
+      }
+      if (isNaN(amount) || amount < 200000) {
+        document.getElementById('errorMsg').textContent = 'Giá trị đơn hàng phải từ 200.000 VND!';
+        return;
+      }
+      if (!/^0\d{9}$/.test(phone)) {
+        document.getElementById('errorMsg').textContent = 'Số điện thoại không hợp lệ!';
+        return;
+      }
+      if (!name || !district) {
+        document.getElementById('errorMsg').textContent = 'Vui lòng nhập đầy đủ thông tin!';
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Đang gửi...';
+
+      try {
+        let res = await fetch(scriptURL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ordercode, name, district, phone, amount })
+        });
+
+        let result = await res.json();
+        if (result.status === "success") {
+          document.getElementById('result').innerHTML = `Chúc mừng bạn nhận được:<br><span style="font-size:26px; color:#ff7f50;">${result.reward}</span>`;
+          document.getElementById('result').style.display = 'block';
+          document.getElementById('luckyForm').reset();
+        } else if (result.status === "out_of_prizes") {
+          document.getElementById('errorMsg').textContent = "Xin lỗi, tất cả quà đã được phát hết!";
+        } else {
+          document.getElementById('errorMsg').textContent = "Có lỗi xảy ra: " + (result.message || "");
+        }
+      } catch (err) {
+        document.getElementById('errorMsg').textContent = 'Có lỗi khi gửi dữ liệu, hãy thử lại!';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Bốc thăm';
+      }
+    });
+  </script>
+</body>
+</html>
