@@ -141,28 +141,33 @@
       submitBtn.textContent = 'Đang gửi...';
 
       try {
-        let res = await fetch(scriptURL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ordercode, name, district, phone, amount })
-        });
+  let res = await fetch(scriptURL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ordercode, name, district, phone, amount })
+  });
 
-        let result = await res.json();
-        if (result.status === "success") {
-          document.getElementById('result').innerHTML = `Chúc mừng bạn nhận được:<br><span style="font-size:26px; color:#ff7f50;">${result.reward}</span>`;
-          document.getElementById('result').style.display = 'block';
-          document.getElementById('luckyForm').reset();
-        } else if (result.status === "out_of_prizes") {
-          document.getElementById('errorMsg').textContent = "Xin lỗi, tất cả quà đã được phát hết!";
-        } else {
-          document.getElementById('errorMsg').textContent = "Có lỗi xảy ra: " + (result.message || "");
-        }
-      } catch (err) {
-        document.getElementById('errorMsg').textContent = 'Có lỗi khi gửi dữ liệu, hãy thử lại!';
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Bốc thăm';
-      }
+  if (!res.ok) {
+    throw new Error(`Lỗi ${res.status}: ${res.statusText}`);
+  }
+
+  let result = await res.json();
+  if (result.status === "success") {
+    document.getElementById('result').innerHTML = `Chúc mừng bạn nhận được:<br><span style="font-size:26px; color:#ff7f50;">${result.reward}</span>`;
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('luckyForm').reset();
+  } else if (result.status === "out_of_prizes") {
+    document.getElementById('errorMsg').textContent = "Xin lỗi, tất cả quà đã được phát hết!";
+  } else {
+    throw new Error(result.message || "Có lỗi xảy ra!");
+  }
+} catch (err) {
+  document.getElementById('errorMsg').textContent = `Lỗi khi gửi dữ liệu: ${err.message}`;
+} finally {
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Bốc thăm';
+}
+
     });
   </script>
 </body>
